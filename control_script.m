@@ -1,46 +1,99 @@
-close all; clear all;clc;
-
 %%%% To run this, from a console type: sudo comsol42 server matlab
 %%%% then run it as if you were in real matlab
 
-%%%%%%% Set Geometry %%%%%%%%
-geom.n_eff = 3.5; %+.002*1i;
-geom.wavelength = 1;
+close all; clear all; clc;
 
-radius = 4;
-geom.system_size = 10;
+%%%% Did you already run COMSOL?
+DO_COMSOL = 1; % 1 = do comsol, 0 = skip comsol.
 
-% radius = 20;
-% geom.system_size = 44;
+%%%% Here we will set the system parameters:
 
-res=360;
-phi = 0:2*pi/res:2*pi;
+R = 5;        % Largest distance from the center of the cavity to
+              % the edge in um.
+n_inside = 3.5; % index of refraction inside the cavity. 
+lambda_a = 1; % wavelength of the atomic resonance transition in
+              % um.
+gamma_perp_length = .01; % width of the gain curve in um.
 
-%epsilon = 0.11;
-%r0 = radius/(1+epsilon);
-%geom.x_coords = r0*(1+epsilon*cos(2*phi)).*cos(phi);
-%geom.y_coords = r0*(1+epsilon*cos(2*phi)).*sin(phi);
 
-flat_position = 0.5; %units of radius (1 is a circle, 0 a semi-circle)
-geom.x_coords = min(radius.*cos(phi),radius*flat_position);
-geom.y_coords = radius.*sin(phi);
+directory = '~/acerjan/comsol_results/ellipse_R5um_test2/';
+              % Directory to save results to. Make sure to include
+              % the final '/'.
+Q_thresh = 500; % minimum Q value for modes to save.
+num_modes = 100; % number of modes to solve for from COMSOL.
 
-gen_geometry(geom);
-%%
+angular_resolution = 360; % COMSOL angular resolution.
 
-num_modes=100;
-%%
-tic
-solve_it(['scratch_file'],geom.wavelength,num_modes);
-toc
 
-%%
-folder = '~/acerjan/comsol_results/Dcav_R4um_neff3p5/';
+%%%% and the system geometry:
 
-Qthresh=200;
-[Q lambda] = extract_field('scratch_file_solved',Qthresh,num_modes,folder,[num2str(-radius-1),',.01,',num2str(radius+1)]);
+phi = 0:2*pi/angular_resolution:2*pi;
 
-xx=-(radius+1):0.01:(radius+1);yy=xx;
-dlmwrite([folder 'grid_xy'],[xx; yy]);
+%% for D shaped cavity:
+%geom_switch = 'D';
+%flat_position = 0.5; % units of radius (1 is a circle, 0 a semi-circle)
 
-return;
+%% for Quadrupole cavity:
+%geom_switch = 'Quad';
+%epsilon = 0.11; % deformation parameter.
+
+%% for Elliptical cavity:
+geom_switch = 'Ellipse';
+aa = 5;
+bb = 4;
+
+
+%%%%%%% BEGIN COMSOL %%%%%%%%
+%% Don't touch things in here.
+
+switch geom_switch
+  case 'D'
+    assert((flat_position>=0)&&(flat_position<=1));
+
+    geom.x_coords = min(R.*cos(phi),R*flat_position);
+    geom.y_coords = R.*sin(phi);
+    geom_element = flat_position;
+    
+  case 'Quad'
+    assert(epsilon>=0);
+
+    r0 = R/(1+epsilon);
+    geom.x_coords = r0*(1+epsilon*cos(2*phi)).*cos(phi);
+    geom.y_coords = r0*(1+epsilon*cos(2*phi)).*sin(phi);
+    geom_element = epsilon;
+    
+  case 'Ellipse'
+    geom.x_coords = aa*cos(phi);
+    geom.y_coords = bb*sin(phi);
+    geom_element(1) = aa;
+    geom_element(2) = bb;
+end    
+    
+geom.n_eff = n_inside;
+geom.wavelength = lambda_a;
+
+geom.system_size = 2*R + 2*lambda_a;
+
+if (DO_COMSOL == 1)
+    comsol_gen_geometry(geom,directory);
+
+    %%
+    tic
+    comsol_solve_it(['scratch_file'],geom.wavelength,num_modes,directory);
+    toc
+
+    %%
+    xx=-(R+1):0.01:(R+1);yy=xx;
+    dlmwrite([directory, 'grid_xy'],[xx; yy]);
+
+    [Q lambda] = comsol_extract_field('scratch_file_solved',Q_thresh,num_modes, ...
+                                      directory,[num2str(-R-1),[',.01,'],num2str(R+1)],... 
+                                      geom_switch, geom_element);
+
+end
+    
+%%%%%%% BEGIN SPASALT %%%%%%%%
+
+spasalt_setup(directory, R, n_inside, Q_thresh, geom_switch, geom_element);
+spasalt_calc(directory, R, lambda_a, Q_thresh, gamma_perp_length, geom_switch, geom_element);
+
