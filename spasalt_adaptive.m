@@ -7,9 +7,13 @@
 %% given knowledge of the overlap elements chi_mu,nu
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
-                                    gamma_perp_length, geom_switch, geom_element)
+function [minimizeThis] = spasalt_adaptive(pumpRatios, datadir, R, lambda_a, ...
+                                           Q_thresh, gamma_perp_length, ...
+                                           numModes, numR, numTH, ...
+                                           FINAL_BOOL)
 
+    pumpVec = [1, pumpRatios];
+    
     %% INIT:
     %% load comsol data:
     
@@ -19,7 +23,7 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
                     
     aboveZeroIdx = find(Q>Q_thresh);
     clear tmp Q;
-    
+
     %% load spasalt_setup:
     load([datadir,'spasalt_setup.mat'],'chiMat','epsVec','Q','lambda','cavityLocs');
     
@@ -34,71 +38,52 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
     dy = abs(ypts(2) - ypts(1));
 
     pumpProfile = zeros(length(xpts),length(ypts));
-    switch geom_switch
-      case 'D'
-        r0 = geom_element * R;
 
-        for xii=1:length(xpts)
-            x = xpts(xii);
-            for yii=1:length(ypts)
-                y = ypts(yii);
-
-                theta = atan(y/x)+pi/2;
-                r = sqrt(x^2 + y^2);
-                
-                if ( (r^2 <= R^2) && (y <= r0) )
-                    pumpProfile(xii,yii) = 1;
-                end
-                
-                %if (r <= 1.625)
-                %    pumpProfile(xii,yii) = 1;
-                %end                
+    [X,Y] = meshgrid(xpts,ypts);
+    
+    RR = sqrt(X.^2 + Y.^2);
+    TH = atan2(Y,X);
+    TH(isnan(TH)) = 0;
+    
+    rBreaks = linspace(0,R,numR+2);
+    thBreaks = linspace(0,pi,numTH+2);
+    
+    for rii=2:length(rBreaks)
+        for tii=2:length(thBreaks)
+            
+            pIdx = (length(thBreaks)-1)*(rii-2)+(tii-1);
+            
+            rPrev = rBreaks(rii-1);
+            rNext = rBreaks(rii);
+            
+            thPrev = thBreaks(tii-1);
+            thNext = thBreaks(tii);
+            
+            if (tii==length(thBreaks))
+                pumpProfile( (rPrev<=RR) & (RR<rNext) & (thPrev<=TH) & ...
+                             (TH<=thNext) ) = pumpVec(pIdx);
+                pumpProfile( (rPrev<=RR) & (RR<rNext) & (-thNext<=TH) & ...
+                             (TH<=-thPrev) ) = pumpVec(pIdx);
+            else
+                pumpProfile( (rPrev<=RR) & (RR<rNext) & (thPrev<=TH) & ...
+                             (TH<thNext) ) = pumpVec(pIdx);
+                pumpProfile( (rPrev<=RR) & (RR<rNext) & (-thNext<TH) & ...
+                             (TH<=-thPrev) ) = pumpVec(pIdx);
             end
         end
-        
-      case 'Quad'
-        r0 = R/(1+geom_element);
-        for xii=1:length(xpts)
-            x = xpts(xii);
-            for yii=1:length(ypts)
-                y = ypts(yii);
-                
-                theta = atan(y/x)+pi/2;
-                r = sqrt(x^2 + y^2);
-                if (r <= r0*(1+geom_element*cos(2*theta)))
-                    pumpProfile(xii,yii) = 1;
-                end
-
-            end
-        end
-      
-       case 'Ellipse'
-        aa = geom_element(1);
-        bb = geom_element(2);
-        for xii=1:length(xpts)
-            x = xpts(xii);
-            for yii=1:length(ypts)
-                y = ypts(yii);
-                
-                if ( (x/bb)^2 + (y/aa)^2 <= 1)
-                    pumpProfile(xii,yii) = 1;
-                end
-            end
-        end
-
-      otherwise
-        error('I do not recognize your choice of geometry.');
     end
-        
+    pumpProfile = pumpProfile .* cavityLocs;
+    
     %sum(reshape(cavityLocs,[],1)*dx*dy)
     %sum(reshape(pumpProfile,[],1)*dx*dy)    
     pumpProfile = pumpProfile*(sum(reshape(cavityLocs,[],1)*dx*dy)/sum(reshape(pumpProfile,[],1)*dx*dy));
-    pumpUni = pumpProfile;
+    
+    %imagesc(pumpProfile)
+    %assert(false);
     
     fVec = zeros(length(lambda),1);
     parfor ii=1:length(lambda)
         idxI = aboveZeroIdx(ii);
-        %EzI = dlmread([datadir,'Ez_sol',num2str(idxI)]);
         EzI = parload([datadir,'Ez_sol',num2str(idxI),'.mat']);
         EzI = reshape(EzI, [], 1);
         
@@ -114,11 +99,17 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
     D = real(D);
     [~,idx] = sort(D,'ascend');
     
+    Duni = et .* ((k - k_a + 1i*gamma_perp) / gamma_perp) .* (epsVec);
+    Duni = real(Duni);
+    
     %% reorder everything:
     D = D(idx);
     k = k(idx);
     chiMat = chiMat(idx,idx);
     aboveZeroIdx = aboveZeroIdx(idx);
+    
+    Duni = Duni(idx);
+    DuniThr = min(Duni);
 
     %% calculate generalized mode competition parameters:
     N = length(D);    
@@ -137,9 +128,6 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
             cvec(mii) = c_gen(mii, nii-1, Amat, D);
         end
         
-        %size(Amat(nii,1:(nii-1)))
-        %size(bvec)
-        
         Ab = Amat(nii,1:(nii-1)) * bvec;
         AcD = (Amat(nii,1:(nii-1)) * cvec) * D(nii);
         
@@ -147,18 +135,40 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
         
     end     
     
+    %% optimization location:
+
     lambdaVec(lambdaVec >= .9999) = .9999;
     lambdaVec(lambdaVec < 0) = .9999;
-    D_uni_interacting = D./(1-lambdaVec);
+    D_interacting = D./(1-lambdaVec);
+
+    [~,idx] = sort(D_interacting,'ascend');
+    D_interacting = D_interacting(idx);
+
+    if (numModes == 1)
+        minimizeThis = (D_interacting(1)/D_interacting(2))+abs(1-(D_interacting(1)/DuniThr));
+    else    
+        D_ratio = D_interacting/DuniThr;
+        minimizeThis = prod(Drat(1:numModes));    
+    end
+    disp(minimizeThis);
     
-    [~,idx] = sort(D_uni_interacting,'ascend');
-    D_uni_interacting = D_uni_interacting(idx);
-    D_uni = D(idx);
-    aboveZeroIdxUni = aboveZeroIdx(idx);
-    AmatUni = Amat(idx,idx);
-    
-    save([datadir,'spasalt_uniform_results.mat'],'lambdaVec', 'D_uni', ...
-         'D_uni_interacting', 'pumpUni', 'aboveZeroIdxUni', 'AmatUni');
+    if (FINAL_BOOL == 1)
+        imagesc(pumpProfile);
+        D_adaptive_nonInt = D(idx);
+        D_adaptive_interacting = D_interacting;
+        D_uniform_nonInt_sorted = Duni(idx);
+        optPumpVec = pumpVec(2:end);
+        pumpAdap = pumpProfile;
+        aboveZeroIdxAdap = aboveZeroIdx(idx);
+        AmatAdap = Amat(idx,idx);
+        
+        save([datadir,'spasalt_adaptive.mat'],'optPumpVec', ...
+             'D_adaptive_nonInt', 'D_adaptive_interacting', ...
+             'D_uniform_nonInt_sorted', 'pumpAdap', 'aboveZeroIdxAdap', ...
+             'AmatAdap');
+        
+        minimizeThis = [];
+    end   
     
 end
 

@@ -16,65 +16,29 @@ and SALT solutions. (All of the bibtex entries for these are given below.)
 
 
 
-Version: v0.0 Alpha release, 5/13/15
+Version: v0.0 Beta release, 2/23/16
 
-Congratulations, you've downloaded my first release of this repository of
-code. This is riddled with bugs, that I'll be ironing out in early June.
+Congratulations, you've downloaded my second release of this repository of
+code. A great deal of functionality has been added since the original
+release, but this new version is also more sensitive to memory management,
+and is sadly incompatible with the alpha release, as they store the data
+in different ways.
 
 
 How to use:
 
-For the moment, I have not yet written a full control script for this code,
-this will be corrected very soon, but again, just email me for anything that
-doesn't make sense.
-
-1) 
 control_script.m - defines the cavity for COMSOL, runs the COMSOL simulations
 and then extracts the field profiles. Run using the comsol scripting command,
 such as:
 sudo comsol42 server matlab
 then in the MATLAB program run control_script.
 
-In this script, you'll need to set:
+This is the script where you will set all of the necessary parameters for the
+cavity and the gain medium. If these variables are not clear in the comments
+in the script, please let me know. If you need to add a new geometry, this currently
+needs to be added in a few different ways in separate locations, please email me and
+I'd be happy to assist.
 
-geom.n_eff = the effective index of refraction inside your structure.
-geom.wavelength = the wavelength of your system, in um.
-radius = maximum distance of your structure from the center point, in um.
-geom.system_size = pick a number slightly larger than 2*R.
-
-you'll then need to define the boundary of your cavity in Cartesian coordinates,
-setting geom.x_coords and geom.y_coords. Script is currently set for
-simulating a D-shaped cavity.
-
-num_modes = number of modes you want COMSOL to solve for, in order of
-highest to lowest Q.
-Q_thresh = the minimum Q of a mode you want to save.
-folder = directory for files generated in the simulation.
-
-2) 
-Once you've run COMSOL, you'll want to run comsol_spasalt.m from MATLAB.
-In this code, you'll need to give as arguments folder, from above, and N,
-which is the number of modes above threshold you want to solve for.
-
-You'll also need to set:
-lambda_a = geom.wavelength from before.
-gammaPerpLambda = width of the gain curve in wavelength.
-R = radius from before.
-Q_thresh = same as above.
-
-Finally, you'll again need to input the cavity boundary, near line 54.
-cavityLocs(xii,yii) = 1 for points within the cavity, and 0 outside.
-For a uniform pump across the entire cavity, pumpProfile = cavityLocs.
-Otherwise, you should set pumpProfile(xii,yii) = 1 where you want 
-to pump the cavity.
-
-3)
-Now that you have your SPA-SALT overlap integrals, calculated in step (2),
-you're basically done. Either run lambdaG_gen.m or spasalt_inten_calc.m
-to generate the generalize mode competition parameter lambda, or plots
-of intensity as a function of pump as lasing modes are predicted to
-turn on. You'll need to again specify data directory, folder from above,
-and N, the number of modes above threshold you want to look at.
 
 
 BIBTEX entries:

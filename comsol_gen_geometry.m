@@ -55,7 +55,6 @@ function [ filename ] = comsol_gen_geometry( geom, directory )
     D = [];
     count = 0;
 
-
     x_coords = geom.x_coords;
     y_coords = geom.y_coords;
 
