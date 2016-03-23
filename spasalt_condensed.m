@@ -88,12 +88,34 @@ function [lambdaVec] = spasalt_condensed(datadir, R, lambda_a, Q_thresh, ...
             end
         end
 
+      case 'Stadium'
+        L = geom_element(1);
+        r0 = geom_element(2);
+        for xii=1:length(xpts)
+            x = xpts(xii);
+            for yii=1:length(ypts)
+                y = ypts(yii);
+
+                if ( (x<=r0)&&(x>=-r0)&&(y>=-L/2)&&(y<=L/2) )
+                    pumpProfile(xii,yii) = 1;
+                elseif ( (x<=r0)&&(x>=-r0)&&(y>L/2) )
+                    r = sqrt((y-L/2)^2 + x^2);
+                    if (r<=r0)                        
+                        pumpProfile(xii,yii) = 1;
+                    end
+                elseif ( (x<=r0)&&(x>=-r0)&&(y<-L/2) )
+                    r = sqrt((y+L/2)^2 + x^2);
+                    if (r<=r0)                        
+                        pumpProfile(xii,yii) = 1;
+                    end                    
+                end                    
+            end
+        end
+      
       otherwise
         error('I do not recognize your choice of geometry.');
     end
         
-    %sum(reshape(cavityLocs,[],1)*dx*dy)
-    %sum(reshape(pumpProfile,[],1)*dx*dy)    
     pumpProfile = pumpProfile*(sum(reshape(cavityLocs,[],1)*dx*dy)/sum(reshape(pumpProfile,[],1)*dx*dy));
     pumpUni = pumpProfile;
     
@@ -137,9 +159,6 @@ function [lambdaVec] = spasalt_condensed(datadir, R, lambda_a, Q_thresh, ...
             bvec(mii) = b_gen(mii, nii-1, Amat);
             cvec(mii) = c_gen(mii, nii-1, Amat, D);
         end
-        
-        %size(Amat(nii,1:(nii-1)))
-        %size(bvec)
         
         Ab = Amat(nii,1:(nii-1)) * bvec;
         AcD = (Amat(nii,1:(nii-1)) * cvec) * D(nii);
@@ -247,6 +266,7 @@ function [lambdaVec] = spasalt_condensed(datadir, R, lambda_a, Q_thresh, ...
     DinterHole = DinterHole(idx);
     aboveZeroIdxCond = aboveZeroIdx(idx);
     AmatCond = Amat(idx,idx);
+    chiMatCond = chiMat(idx,idx);
     
     pumpConden = reshape(pumpHole,length(xpts),length(ypts));
 
@@ -257,7 +277,7 @@ function [lambdaVec] = spasalt_condensed(datadir, R, lambda_a, Q_thresh, ...
     
     save([datadir,'spasalt_condensed.mat'],'D_uni','D_conden', ...
          'D_uni_interacting','D_conden_interacting','pumpUni', ...
-         'pumpConden', 'aboveZeroIdxCond', 'AmatCond');   
+         'pumpConden', 'aboveZeroIdxCond', 'AmatCond','chiMatCond');   
 
 end
 

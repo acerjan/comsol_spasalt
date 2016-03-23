@@ -60,10 +60,34 @@ function [Q lambda] = comsol_extract_field( filename,threshold, ...
             end
         end
         
+      case 'Stadium'
+        L = geom_element(1);
+        r0 = geom_element(2);
+        for xii=1:length(xpts)
+            x = xpts(xii);
+            for yii=1:length(ypts)
+                y = ypts(yii);
+
+                if ( (x<=r0)&&(x>=-r0)&&(y>=-L/2)&&(y<=L/2) )
+                    cavityLocs(xii,yii) = 1;
+                elseif ( (x<=r0)&&(x>=-r0)&&(y>L/2) )
+                    r = sqrt((y-L/2)^2 + x^2);
+                    if (r<=r0)                        
+                        cavityLocs(xii,yii) = 1;
+                    end
+                elseif ( (x<=r0)&&(x>=-r0)&&(y<-L/2) )
+                    r = sqrt((y+L/2)^2 + x^2);
+                    if (r<=r0)                        
+                        cavityLocs(xii,yii) = 1;
+                    end                    
+                end                    
+            end
+        end
+      
       otherwise
         error('I do not recognize your choice of geometry.');
     end    
-
+    
     %% BEGIN COMSOL:
     %FCTNEXTRACTFIELD001 Summary of this function goes here
     %   Detailed explanation goes here

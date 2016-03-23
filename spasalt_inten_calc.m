@@ -44,6 +44,7 @@ function [] = spasalt_inten_calc(datadir, nModes, which_results)
             c = c_gen(jj,(ii-1),Amat,D);
             
             int_vec(ii,jj) = c*Dint(ii) - b;
+            %int_vec(ii,jj) = abs(c*Dint(ii) - b);
         end
     end
         

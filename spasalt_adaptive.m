@@ -73,13 +73,7 @@ function [minimizeThis] = spasalt_adaptive(pumpRatios, datadir, R, lambda_a, ...
         end
     end
     pumpProfile = pumpProfile .* cavityLocs;
-    
-    %sum(reshape(cavityLocs,[],1)*dx*dy)
-    %sum(reshape(pumpProfile,[],1)*dx*dy)    
     pumpProfile = pumpProfile*(sum(reshape(cavityLocs,[],1)*dx*dy)/sum(reshape(pumpProfile,[],1)*dx*dy));
-    
-    %imagesc(pumpProfile)
-    %assert(false);
     
     fVec = zeros(length(lambda),1);
     parfor ii=1:length(lambda)
@@ -161,11 +155,12 @@ function [minimizeThis] = spasalt_adaptive(pumpRatios, datadir, R, lambda_a, ...
         pumpAdap = pumpProfile;
         aboveZeroIdxAdap = aboveZeroIdx(idx);
         AmatAdap = Amat(idx,idx);
+        chiMatAdap = chiMat(idx,idx);
         
         save([datadir,'spasalt_adaptive.mat'],'optPumpVec', ...
              'D_adaptive_nonInt', 'D_adaptive_interacting', ...
              'D_uniform_nonInt_sorted', 'pumpAdap', 'aboveZeroIdxAdap', ...
-             'AmatAdap');
+             'AmatAdap','chiMatAdap');
         
         minimizeThis = [];
     end   

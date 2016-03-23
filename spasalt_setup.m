@@ -78,6 +78,30 @@ function [] = spasalt_setup(datadir, R, n_inside, Q_thresh, geom_switch, geom_el
             end
         end
         
+      case 'Stadium'
+        L = geom_element(1);
+        r0 = geom_element(2);
+        for xii=1:length(xpts)
+            x = xpts(xii);
+            for yii=1:length(ypts)
+                y = ypts(yii);
+
+                if ( (x<=r0)&&(x>=-r0)&&(y>=-L/2)&&(y<=L/2) )
+                    cavityLocs(xii,yii) = 1;
+                elseif ( (x<=r0)&&(x>=-r0)&&(y>L/2) )
+                    r = sqrt((y-L/2)^2 + x^2);
+                    if (r<=r0)                        
+                        cavityLocs(xii,yii) = 1;
+                    end
+                elseif ( (x<=r0)&&(x>=-r0)&&(y<-L/2) )
+                    r = sqrt((y+L/2)^2 + x^2);
+                    if (r<=r0)                        
+                        cavityLocs(xii,yii) = 1;
+                    end                    
+                end                    
+            end
+        end
+      
       otherwise
         error('I do not recognize your choice of geometry.');
     end
@@ -90,14 +114,12 @@ function [] = spasalt_setup(datadir, R, n_inside, Q_thresh, geom_switch, geom_el
 
     parfor ii=1:N
         idxI = aboveZeroIdx(ii);
-        %EzI = dlmread([datadir,'Ez_sol',num2str(idxI)]);
         EzI = parload([datadir,'Ez_sol',num2str(idxI),'.mat']);
         EzI = reshape(EzI, [], 1);
         epsVec(ii) = real(sum(EzI .* EzI .* reshape(epsCav,[],1))*dx*dy);
 
         for jj=1:N
             idxJ = aboveZeroIdx(jj);
-            %EzJ = dlmread([datadir,'Ez_sol',num2str(idxJ)]);
             EzJ = parload([datadir,'Ez_sol',num2str(idxJ),'.mat']);
             EzJ = reshape(EzJ, [], 1);
             

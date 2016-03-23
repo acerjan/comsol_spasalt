@@ -4,17 +4,17 @@
 close all; clear all; clc;
 
 %%%% Did you already run COMSOL?
-DO_COMSOL = 0; % 1 = do comsol, 0 = skip comsol.
+DO_COMSOL = 1; % 1 = do comsol, 0 = skip comsol.
 
 %%%% Do you want to run adaptive pumping?
-DO_ADAPT = 1; % 1 = do adaptive pumping, 0 = skip.
+DO_ADAPT = 0; % 1 = do adaptive pumping, 0 = skip.
 
 %%%% Do you want to find the condensed threshold?
 DO_CONDEN = 0; % 1 = find condensed threshold, 0 = skip.
 
 %%%% Here we will set the system parameters:
 
-R = 4;        % Largest distance from the center of the cavity to
+R = 6;        % Largest distance from the center of the cavity to
               % the edge in um.
 
 n_inside = 3.5; % index of refraction inside the cavity. 
@@ -23,11 +23,11 @@ lambda_a = 1; % wavelength of the atomic resonance transition in
 
 gamma_perp_length = .01; % width of the gain curve in um.
 
-directory = '~/Data/2d_salt/Dcav50_R4_rp5_dr20/comsol_new/';
+directory = '~/Data/2d_salt/stadium_R6um/';
               % Directory to save results to. Make sure to include
               % the final '/'.
 
-Q_thresh = 800; % minimum Q value for modes to save.
+Q_thresh = 1000; % minimum Q value for modes to save.
 num_modes = 100; % number of modes to solve for from COMSOL.
 
 angular_resolution = 360; % COMSOL angular resolution.
@@ -35,11 +35,9 @@ angular_resolution = 360; % COMSOL angular resolution.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% choose the system geometry:
 
-phi = 0:2*pi/angular_resolution:2*pi;
-
 %% for D shaped cavity:
-geom_switch = 'D';
-flat_position = 0.5; % units of radius (1 is a circle, 0 a semi-circle)
+%geom_switch = 'D';
+%flat_position = 0.5; % units of radius (1 is a circle, 0 a semi-circle)
 
 %% for Quadrupole cavity:
 %geom_switch = 'Quad';
@@ -49,7 +47,11 @@ flat_position = 0.5; % units of radius (1 is a circle, 0 a semi-circle)
 %geom_switch = 'Ellipse';
 %aa = 5; % length of semi-major axis in um.
 %bb = 4; % length of semi-minor axis in um.
-%assert((R >= aa) && (R >= bb));
+
+%% for Stadium cavity:
+geom_switch = 'Stadium';
+L = 6;
+r0 = 3;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% for Adaptive and Condensed pumping methods:
@@ -60,8 +62,8 @@ numModes = 1;
 % FOR numModes = 1: look for a pump configuration that promotes
 % single-mode behavior while maintaining a constant intensity.
 
-numR = 1; % number of 'breaks' in R.
-numTH = 3; % number of 'breaks' in theta.
+numR = 2; % number of 'breaks' in R.
+numTH = 4; % number of 'breaks' in theta.
 
 % we'll eventually construct the cavity as linspace(0,R,numR+2), so
 % if you put in numR=0, everything will still work, and it means
@@ -75,7 +77,8 @@ numTH = 3; % number of 'breaks' in theta.
 switch geom_switch
   case 'D'
     assert((flat_position>=0)&&(flat_position<=1));
-
+    
+    phi = 0:2*pi/angular_resolution:2*pi;
     geom.x_coords = min(R.*cos(phi),R*flat_position);
     geom.y_coords = R.*sin(phi);
     geom_element = flat_position;
@@ -84,15 +87,34 @@ switch geom_switch
     assert(epsilon>=0);
 
     r0 = R/(1+epsilon);
+    phi = 0:2*pi/angular_resolution:2*pi;
     geom.x_coords = r0*(1+epsilon*cos(2*phi)).*cos(phi);
     geom.y_coords = r0*(1+epsilon*cos(2*phi)).*sin(phi);
     geom_element = epsilon;
     
   case 'Ellipse'
+    assert((R >= aa) && (R >= bb));
+    
+    phi = 0:2*pi/angular_resolution:2*pi;
     geom.x_coords = aa*cos(phi);
     geom.y_coords = bb*sin(phi);
     geom_element(1) = aa;
     geom_element(2) = bb;
+
+  case 'Stadium'
+    assert(R>=(L/2+r0));
+    
+    phi = -pi/2:2*pi/angular_resolution:pi/2;
+    x1 = L/2+r0*cos(phi);
+    y1 = r0*sin(phi);
+    x2 = -L/2-r0*cos(-phi);
+    y2 = r0*sin(-phi);
+    
+    geom.x_coords = [x1,x2];
+    geom.y_coords = [y1,y2];
+    geom_element(1) = L;
+    geom_element(2) = r0;
+    
 end    
     
 geom.n_eff = n_inside;
