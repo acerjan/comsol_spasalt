@@ -149,32 +149,21 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
     end
 
     lambdaVec = zeros(N,1);
+    D_uni_interacting = zeros(N,1);
+    D_uni_interacting(1) = D(1);
+    
     for nii=2:N
-        
-        bvec = zeros(nii-1,1);
-        cvec = zeros(nii-1,1);
-        for mii=1:(nii-1)
-            bvec(mii) = b_gen(mii, nii-1, Amat);
-            cvec(mii) = c_gen(mii, nii-1, Amat, D);
-        end
-        
-        Ab = Amat(nii,1:(nii-1)) * bvec;
-        AcD = (Amat(nii,1:(nii-1)) * cvec) * D(nii);
-        
-        lambdaVec(nii) = (1/(1 - Ab))*(AcD - Ab);
-        
-    end     
-    
-    lambdaVec(lambdaVec >= .9999) = .9999;
-    lambdaVec(lambdaVec < 0) = .9999;
-    D_uni_interacting = D./(1-lambdaVec);
-    
+        [D_uni_interacting, lambdaVec] = gen_next_thresh(D,Amat,D_uni_interacting,lambdaVec);
+    end
+    [D, D_uni_interacting, lambdaVec];
+
     [~,idx] = sort(D_uni_interacting,'ascend');
     D_uni_interacting = D_uni_interacting(idx);
     D_uni = D(idx);
     aboveZeroIdxUni = aboveZeroIdx(idx);
     AmatUni = Amat(idx,idx);
     chiMatUni = chiMat(idx,idx);
+    lambdaVec = lambdaVec(idx);
     
     save([datadir,'spasalt_uniform_results.mat'],'lambdaVec', 'D_uni', ...
          'D_uni_interacting', 'pumpUni', 'aboveZeroIdxUni', 'AmatUni', ...
@@ -185,6 +174,43 @@ end
 
 
 %%%%%%% helper functions:
+
+function [Dint, lambdaSAVE] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
+    
+    idxOn = find(Dint);
+    idxOff = find(Dint==0);
+    
+    nCur = length(idxOn);
+    Don = DnonInt(idxOn);
+    AmatOn = Amat(idxOn,idxOn);
+    bvec = zeros(nCur,1);
+    cvec = zeros(nCur,1);
+    for ii=1:nCur
+        bvec(ii) = b_gen(ii,nCur,AmatOn);
+        cvec(ii) = c_gen(ii,nCur,AmatOn,Don);
+    end
+    
+
+    nTest = length(idxOff);    
+    Dcheck = zeros(nTest,1);
+    lambdaVec = zeros(nTest,1);
+    DintCheck = zeros(nTest,1);
+    for ii=1:nTest
+        Ab = Amat(idxOff(ii),idxOn)*bvec;
+        AcD = (Amat(idxOff(ii),idxOn)*cvec)*DnonInt(idxOff(ii));
+        
+        lambdaVec(ii) = (1/(1-Ab))*(AcD-Ab);
+        if ((lambdaVec(ii) > 0.9999) || (lambdaVec(ii) < 0))
+            lambdaVec(ii) = 0.9999;
+        end
+        DintCheck(ii) = DnonInt(idxOff(ii))/(1-lambdaVec(ii));
+    end
+        
+    [~,idx] = sort(abs(DintCheck),'ascend');
+    Dint(idxOff(idx(1))) = DintCheck(idx(1));
+    lambdaSAVE(idxOff(idx(1))) = lambdaVec(idx(1));
+
+end
 
 function [c_mu] = c_gen(mu, n, Amat, d0vec)
     

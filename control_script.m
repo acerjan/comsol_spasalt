@@ -4,7 +4,7 @@
 close all; clear all; clc;
 
 %%%% Did you already run COMSOL?
-DO_COMSOL = 1; % 1 = do comsol, 0 = skip comsol.
+DO_COMSOL = 0; % 1 = do comsol, 0 = skip comsol.
 
 %%%% Do you want to run adaptive pumping?
 DO_ADAPT = 0; % 1 = do adaptive pumping, 0 = skip.
@@ -14,20 +14,20 @@ DO_CONDEN = 0; % 1 = find condensed threshold, 0 = skip.
 
 %%%% Here we will set the system parameters:
 
-R = 6;        % Largest distance from the center of the cavity to
+R = 5;        % Largest distance from the center of the cavity to
               % the edge in um.
 
 n_inside = 3.5; % index of refraction inside the cavity. 
 lambda_a = 1; % wavelength of the atomic resonance transition in
               % um.
 
-gamma_perp_length = .01; % width of the gain curve in um.
+gamma_perp_length = .03; % width of the gain curve in um.
 
-directory = '~/Data/2d_salt/stadium_R6um/';
+directory = '~/Data/2d_salt/comsol_Dcav_R5_rp3/';
               % Directory to save results to. Make sure to include
               % the final '/'.
 
-Q_thresh = 1000; % minimum Q value for modes to save.
+Q_thresh = 800; % minimum Q value for modes to save.
 num_modes = 100; % number of modes to solve for from COMSOL.
 
 angular_resolution = 360; % COMSOL angular resolution.
@@ -36,8 +36,8 @@ angular_resolution = 360; % COMSOL angular resolution.
 %%%% choose the system geometry:
 
 %% for D shaped cavity:
-%geom_switch = 'D';
-%flat_position = 0.5; % units of radius (1 is a circle, 0 a semi-circle)
+geom_switch = 'D';
+flat_position = 0.3; % units of radius (1 is a circle, 0 a semi-circle)
 
 %% for Quadrupole cavity:
 %geom_switch = 'Quad';
@@ -49,9 +49,9 @@ angular_resolution = 360; % COMSOL angular resolution.
 %bb = 4; % length of semi-minor axis in um.
 
 %% for Stadium cavity:
-geom_switch = 'Stadium';
-L = 6;
-r0 = 3;
+%geom_switch = 'Stadium';
+%L = 6;
+%r0 = 3;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% for Adaptive and Condensed pumping methods:
