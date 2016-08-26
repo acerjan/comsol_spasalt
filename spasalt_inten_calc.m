@@ -37,8 +37,6 @@ function [] = spasalt_inten_calc(datadir, nModes, which_results)
     
     int_vec = zeros(nModes);
     for ii=2:nModes
-        %Dint(3) = 0.0216; %0.0216; %0.017474;
-
         for jj=1:(ii-1)
             b = b_gen(jj,(ii-1),Amat);
             c = c_gen(jj,(ii-1),Amat,D);

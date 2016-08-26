@@ -152,8 +152,11 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
     D_uni_interacting = zeros(N,1);
     D_uni_interacting(1) = D(1);
     
+    trig=0;
     for nii=2:N
-        [D_uni_interacting, lambdaVec] = gen_next_thresh(D,Amat,D_uni_interacting,lambdaVec);
+        if (trig==0)
+            [D_uni_interacting, lambdaVec, trig] = gen_next_thresh(D,Amat,D_uni_interacting,lambdaVec);
+        end
     end
     [D, D_uni_interacting, lambdaVec];
 
@@ -175,7 +178,7 @@ end
 
 %%%%%%% helper functions:
 
-function [Dint, lambdaSAVE] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
+function [Dint, lambdaSAVE, trig] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
     
     idxOn = find(Dint);
     idxOff = find(Dint==0);
@@ -190,7 +193,6 @@ function [Dint, lambdaSAVE] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
         cvec(ii) = c_gen(ii,nCur,AmatOn,Don);
     end
     
-
     nTest = length(idxOff);    
     Dcheck = zeros(nTest,1);
     lambdaVec = zeros(nTest,1);
@@ -209,7 +211,14 @@ function [Dint, lambdaSAVE] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
     [~,idx] = sort(abs(DintCheck),'ascend');
     Dint(idxOff(idx(1))) = DintCheck(idx(1));
     lambdaSAVE(idxOff(idx(1))) = lambdaVec(idx(1));
-
+    
+    trig=0;
+    if (lambdaVec(idx(1)) == 0.9999)
+        trig=1;
+        lambdaSAVE(idxOff) = 0.9999;
+        Dint(idxOff) = DnonInt(idxOff)./(1-lambdaSAVE(idxOff));
+    end
+        
 end
 
 function [c_mu] = c_gen(mu, n, Amat, d0vec)

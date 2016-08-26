@@ -21,7 +21,7 @@ volume = {82},
 year = {2010},
 }
 
-@unpublished{cerjan_comsol_salt_2015,
+@unpublished{cerjan_resonance_salt,
 author = {A. Cerjan and B. Redding and L. Ge and S. F. Liew and H. Cao and A. Douglas Stone},
 title = {Controlling mode competition by tailoring the spatial pump distribution in a laser: A resonance-based approach},
 note = {in submission},

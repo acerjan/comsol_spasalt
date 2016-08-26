@@ -154,8 +154,11 @@ function [lambdaVec] = spasalt_condensed(datadir, R, lambda_a, Q_thresh, ...
     DinterUni = zeros(N,1);
     DinterUni(1) = D(1);
     
+    trig=0;
     for nii=2:N
-        [DinterUni, lambdaVec] = gen_next_thresh(D,Amat,DinterUni,lambdaVec);
+        if (trig==0)
+            [D_uni_interacting, lambdaVec, trig] = gen_next_thresh(D,Amat,D_uni_interacting,lambdaVec);
+        end
     end
 
     %% calculate the intensities when nMode turns on:
@@ -235,8 +238,11 @@ function [lambdaVec] = spasalt_condensed(datadir, R, lambda_a, Q_thresh, ...
     DinterHole = zeros(N,1);
     DinterHole(1) = D(1);
     
+    trig=0;
     for nii=2:N
-        [DinterHole, lambdaVec] = gen_next_thresh(D,Amat,DinterHole,lambdaVec);
+        if (trig==0)
+            [D_uni_interacting, lambdaVec, trig] = gen_next_thresh(D,Amat,D_uni_interacting,lambdaVec);
+        end
     end
 
     [~,idx] = sort(DinterHole,'ascend');
@@ -262,7 +268,7 @@ end
 
 %%%%%%% helper functions:
 
-function [Dint, lambdaSAVE] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
+function [Dint, lambdaSAVE, trig] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
     
     idxOn = find(Dint);
     idxOff = find(Dint==0);
@@ -277,7 +283,6 @@ function [Dint, lambdaSAVE] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
         cvec(ii) = c_gen(ii,nCur,AmatOn,Don);
     end
     
-
     nTest = length(idxOff);    
     Dcheck = zeros(nTest,1);
     lambdaVec = zeros(nTest,1);
@@ -296,7 +301,14 @@ function [Dint, lambdaSAVE] = gen_next_thresh(DnonInt, Amat, Dint,lambdaSAVE)
     [~,idx] = sort(abs(DintCheck),'ascend');
     Dint(idxOff(idx(1))) = DintCheck(idx(1));
     lambdaSAVE(idxOff(idx(1))) = lambdaVec(idx(1));
-
+    
+    trig=0;
+    if (lambdaVec(idx(1)) == 0.9999)
+        trig=1;
+        lambdaSAVE(idxOff) = 0.9999;
+        Dint(idxOff) = DnonInt(idxOff)./(1-lambdaSAVE(idxOff));
+    end
+        
 end
 
 function [c_mu] = c_gen(mu, n, Amat, d0vec)
