@@ -167,7 +167,7 @@ function [Q lambda] = comsol_extract_field( filename,threshold, ...
             %     model.result.export.remove('data1');
             
             
-            Ez = dlmread([directory,'Ez_sol',num2str(ii),'.mat'],'%',12,0);
+            Ez = dlmread([directory,'Ez_sol',num2str(ii),'.mat'],'%',12,0); % change 12 to 13 for comsol 5.2
             %     Ex = dlmread('scratch_Ex','%',12,0);
             %     Ey = dlmread('scratch_Ey','%',12,0);
 
@@ -197,7 +197,7 @@ function [Q lambda] = comsol_extract_field( filename,threshold, ...
     model.result.export.remove('data1');
     
     
-    structure = dlmread(['scratch_structure'],'%',12,0);
+    structure = dlmread(['scratch_structure'],'%',12,0); % change 12 to 13 for comsol 5.2
     dlmwrite([directory,'structure'],structure);
     
 end

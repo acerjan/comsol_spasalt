@@ -132,7 +132,7 @@ function [lambdaVec] = spasalt_calc(datadir, R, lambda_a, Q_thresh,...
     k_n = k - 1i*k./(2*Q);
     et = ( (k_n.^2)./(k.^2) - 1 );
     D = et .* ((k - k_a + 1i*gamma_perp) / gamma_perp) .* (epsVec./fVec);
-    D = real(D);
+    D = abs(D);
     [~,idx] = sort(D,'ascend');
     
     %% reorder everything:

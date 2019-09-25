@@ -119,7 +119,7 @@ function [minimizeThis] = spasalt_adaptive(pumpRatios, datadir, R, lambda_a, ...
     trig=0;
     for nii=2:N
         if (trig==0)
-            [D_uni_interacting, lambdaVec, trig] = gen_next_thresh(D,Amat,D_uni_interacting,lambdaVec);
+            [D_interacting, lambdaVec, trig] = gen_next_thresh(D,Amat,D_interacting,lambdaVec);
         end
     end
 
